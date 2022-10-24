@@ -22,6 +22,7 @@ import cn.hutool.http.HttpUtil;
 import com.yuxuan66.jenkins.modules.release.entity.Receive;
 import com.yuxuan66.jenkins.modules.utils.ShellUtil;
 import lombok.SneakyThrows;
+import lombok.extern.log4j.Log4j;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -33,7 +34,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class ReceiveService {
 
-    private final static String DOWNLOAD_URL = "下载服务器地址";
+    private final static String DOWNLOAD_URL = "http://139.9.235.36:51002/";
 
     /**
      * 接收数据在堡垒机内发布项目
@@ -45,10 +46,10 @@ public class ReceiveService {
         String url = DOWNLOAD_URL + receive.getType() + "/" + receive.getFileName();
         log.info("Start publishing your project: " + receive.getProjectName() + ", Type: " + receive.getType());
         log.info("Project Download Address: " + url);
+
         String fileName = receive.getSavePath() + receive.getSaveName();
         // 删除原始文件
         if (FileUtil.exist(fileName)) FileUtil.del(fileName);
-
         // 下载文件
         long fileSize = HttpUtil.downloadFile(url, fileName);
         // 执行Shell并根据启动状态发送推送
@@ -72,9 +73,15 @@ public class ReceiveService {
                 }
                 Thread.sleep(1000);
             }
-            HttpUtil.get("推送服务" + URLUtil.encode(receive.getProjectName() + "API,自动发布" + (success ? "成功" : "失败")));
+            HttpUtil.get("http://api.hd-eve.com/api/sendMsg/801407271?msg=" + URLUtil.encode(receive.getProjectName() + "API,自动发布" + (success ? "成功" : "失败")));
             log.info("project release ok status: " + success);
-
+        } else if ("web".equalsIgnoreCase(receive.getType())) {
+            // 删除目录内数据
+            FileUtil.del(receive.getSavePath());
+            // 执行解压命令
+            ShellUtil.exec("unzip " + receive.getSaveName());
+            HttpUtil.get("http://api.hd-eve.com/api/sendMsg/801407271?msg=" + URLUtil.encode(receive.getProjectName() + "WEB,自动发布成功"));
+            log.info("project release ok status: true" );
         }
 
         return "Release Success";
