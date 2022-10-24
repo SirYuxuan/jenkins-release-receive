@@ -19,6 +19,10 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.core.util.URLUtil;
 import cn.hutool.http.HttpUtil;
+import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONConfig;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.yuxuan66.jenkins.modules.release.entity.Receive;
 import com.yuxuan66.jenkins.modules.utils.ShellUtil;
 import lombok.SneakyThrows;
@@ -48,8 +52,12 @@ public class ReceiveService {
         log.info("Project Download Address: " + url);
 
         String fileName = receive.getSavePath() + receive.getSaveName();
-        // 删除原始文件
-        if (FileUtil.exist(fileName)) FileUtil.del(fileName);
+
+        if("api".equalsIgnoreCase(receive.getType())){
+            if (FileUtil.exist(fileName)) FileUtil.del(fileName);
+        }else{
+            FileUtil.del(receive.getSavePath());
+        }
         // 下载文件
         long fileSize = HttpUtil.downloadFile(url, fileName);
         // 执行Shell并根据启动状态发送推送
@@ -77,7 +85,7 @@ public class ReceiveService {
             log.info("project release ok status: " + success);
         } else if ("web".equalsIgnoreCase(receive.getType())) {
             // 删除目录内数据
-            FileUtil.del(receive.getSavePath());
+
             // 执行解压命令
             ShellUtil.exec("unzip " + receive.getSaveName());
             HttpUtil.get("http://api.hd-eve.com/api/sendMsg/801407271?msg=" + URLUtil.encode(receive.getProjectName() + "WEB,自动发布成功"));
