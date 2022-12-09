@@ -17,7 +17,9 @@ package com.yuxuan66.jenkins.modules.release.service;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RuntimeUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.URLUtil;
+import cn.hutool.core.util.ZipUtil;
 import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONConfig;
@@ -64,7 +66,12 @@ public class ReceiveService {
         log.info("File download completed, file size: " + fileSize / 1024 / 1024 + "MB");
         if ("api".equalsIgnoreCase(receive.getType())) {
             log.info("The project is an API project and starts executing the restart command");
-            ShellUtil.exec(" ./shellApi.sh restart");
+            if(StrUtil.isBlank(receive.getShellName())){
+                ShellUtil.exec(" ./shellApi.sh restart");
+            }else{
+                ShellUtil.exec(" ./"+receive.getShellName()+" restart");
+            }
+
             boolean success = false;
             log.info("Start monitoring log");
             for (int i = 0; i < 180; i++) {
@@ -85,9 +92,8 @@ public class ReceiveService {
             log.info("project release ok status: " + success);
         } else if ("web".equalsIgnoreCase(receive.getType())) {
             // 删除目录内数据
-
             // 执行解压命令
-            ShellUtil.exec("unzip " + receive.getSaveName());
+            ZipUtil.unzip(fileName,receive.getSavePath());
             HttpUtil.get("http://api.hd-eve.com/api/sendMsg/801407271?msg=" + URLUtil.encode(receive.getProjectName() + "WEB,自动发布成功"));
             log.info("project release ok status: true" );
         }

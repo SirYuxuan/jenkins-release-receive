@@ -45,4 +45,9 @@ public class Receive {
      * 项目名称，用来判断是否成功
      */
     private String projectName;
+
+    /**
+     * 脚本名称
+     */
+    private String shellName;
 }
